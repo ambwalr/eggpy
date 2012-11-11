@@ -62,7 +62,7 @@ class _IdentChannel(asynchat.async_chat):
         response = (request, "USERID", sysos, self.userid)
         
         self.incoming = []
-        self.push(":".join(response))
+        self.push(":".join(response).encode())
         self.close_when_done()
 
 

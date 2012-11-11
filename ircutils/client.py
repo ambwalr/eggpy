@@ -5,11 +5,11 @@ inherits from :class:`SimpleClient` so it has the methods listed below.
 """
 import collections
 
-import connection
-import ctcp
-import events
-import format
-import protocol
+from . import connection
+from . import ctcp
+from . import events
+from . import format
+from . import protocol
 
 
 class SimpleClient(object):

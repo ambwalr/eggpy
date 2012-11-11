@@ -14,8 +14,8 @@ else:
     ssl_available = True
     import errno
 
-import protocol
-import responses
+from . import protocol
+from . import responses
 
 
 class Connection(asynchat.async_chat):
@@ -28,7 +28,7 @@ class Connection(asynchat.async_chat):
     def __init__(self, ipv6=False):
         asynchat.async_chat.__init__(self)
         self.ping_auto_respond = True
-        self.set_terminator("\r\n")
+        self.set_terminator("\r\n".encode())
         self.collect_incoming_data = self._collect_incoming_data
         if ipv6:
             self.create_socket(socket.AF_INET6, socket.SOCK_STREAM)
@@ -60,7 +60,7 @@ class Connection(asynchat.async_chat):
     
     def found_terminator(self):
         """ Activated when ``\\r\\n`` is encountered. Do not call directly. """
-        data = "".join(self.incoming)
+        data = "".encode().join(self.incoming).decode()
         self.incoming = []
         prefix, command, params = protocol.parse_line(data)
         if command == "PING" and self.ping_auto_respond:
@@ -82,7 +82,7 @@ class Connection(asynchat.async_chat):
             params = list(params)
             if kwargs["trailing"] is not None:
                 params.append(":%s" % kwargs["trailing"])
-        self.push("%s %s\r\n" % (command.upper(), " ".join(params)))
+        self.push(("%s %s\r\n" % (command.upper(), " ".join(params))).encode())
     
     
     def handle_error(self):
@@ -122,11 +122,11 @@ class Connection(asynchat.async_chat):
         try:
             result = self.write(data)
             return result
-        except ssl.SSLError, why:
+        except (ssl.SSLError, why):
             if why[0] == asyncore.EWOULDBLOCK:
                 return 0
             else:
-                raise ssl.SSLError, why
+                raise (ssl.SSLError, why)
             return 0
         
         
@@ -138,7 +138,7 @@ class Connection(asynchat.async_chat):
                 self.handle_close()
                 return ''
             return data
-        except ssl.SSLError, why:
+        except (ssl.SSLError, why):
             if why[0] in [asyncore.ECONNRESET, asyncore.ENOTCONN, 
                           asyncore.ESHUTDOWN]:
                 self.handle_close()

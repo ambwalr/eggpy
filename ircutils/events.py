@@ -11,7 +11,7 @@ import bisect
 import collections
 import traceback
 
-import protocol
+from . import protocol
 
 
 class EventDispatcher(object):
@@ -143,7 +143,8 @@ class EventListener(object):
         use this method as handlers are automatically added.
                 
         """
-        bisect.insort(self.handlers, (priority, handler))
+        self.handlers += [(priority, handler)]
+        self.handlers.sort(key=lambda r: r[0])
     
     def remove_handler(self, handler):
         """ This removes all handlers that are equal to the ``handler`` which
@@ -164,7 +165,7 @@ class EventListener(object):
         for p, handler in self.handlers:
             try:
                 handler(*args)
-            except StandardError, ex:
+            except (StandardError, ex):
                 traceback.print_exc(ex)
                 self.handlers.remove((p, handler))
     
