@@ -23,7 +23,7 @@ class Logger:
 
     def _chatlogline(self, line):
         """Write a chat line to standard out and the current chat log file."""
-        print line
+        print(line)
         self.chatfd.write(line+'\n')
 
     def on_welcome(self, bot, event):
