@@ -95,7 +95,7 @@ class QuoteTrigger:
 
         return True
 
-class Command:
+class Command(object):
     def __init__(self, bot, command):
         bot.add_message_handler(self, self.on_message)
         self._command = command
@@ -110,7 +110,7 @@ class Command:
 class AddQuote(Command):
     """Class responsible for the add quote command."""
     def __init__(self, bot):
-        super().__init__(bot, "add")
+        super(AddQuote, self).__init__(bot, "add")
 
     def on_command(self, bot, event, new_quote):
         if new_quote in bot.quotes:
@@ -150,7 +150,7 @@ class GetQuote:
 
 class Rebirth(Command):
     def __init__(self, bot):
-        super().__init__(bot, "rebirth")
+        super(Rebirth, self).__init__(bot, "rebirth")
         self.allowable = re.compile('^[0-9a-zA-Z]+$')
 
     def on_command(self, bot, event, args):
