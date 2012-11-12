@@ -1,13 +1,49 @@
 from ircutils import bot
 import random
 import re
+import time
+import os
 
 class Paths:
     """Class responsible for locating configuration files, logs, quotes and
     what not on disk."""
     def __init__(self, bot):
         self.quotes = 'quotes.txt'
-        self.chatlog = 'chatlog.txt'
+        self.chatlog_base = 'log'
+
+    def chatlog(self, kind, name, now):
+        month = time.strftime("%Y%m", now)
+        date = time.strftime("%Y%m%d", now)
+        d = self.chatlog_base+'/'+kind+'/'+name+'/'+month
+        os.makedirs(d, 0o777, True)
+        return d + '/' + kind + '.' + name + '.' + date + '.txt'
+
+class LogTarget:
+    def __init__(self, paths, kind, name):
+        self.paths = paths
+        self.kind = kind
+        self.name = name
+        self.fd = None
+        self.filename = None
+
+    def ensure_open(self, now):
+        f = self.paths.chatlog(self.kind, self.name, now)
+        if not self.fd:
+            self.filename = f
+            self._open()
+            return
+        if f != self.filename:
+            self.fd.close()
+            self.filename = f
+            self._open()
+
+    def _open(self):
+        self.fd = open(self.filename, 'a')
+
+    def write_line(self, line, now):
+        self.ensure_open(now)
+        self.fd.write(line+'\n')
+        self.fd.flush()
 
 class Logger:
     """Class responsible for logging messages and internal events to the bot
@@ -17,35 +53,51 @@ class Logger:
         self.bot = bot
         self.fmt = "<{0}> {1}"
         self.paths = paths
-        self.chatfd = open(paths.chatlog, 'a')
+        self.maintarget = LogTarget(paths, 'main', 'main')
+        self.chtargets = {}
         # We don't use add_message_handler, because we always want to capture messages
         bot.events["message"].add_handler(self.on_message)
         bot.events["welcome"].add_handler(self.on_welcome)
 
-    def _chatlogline(self, line):
+    def _chatlogline(self, line, target=None):
         """Write a chat line to standard out and the current chat log file."""
+        now = time.gmtime()
+        prefix = time.strftime("%Y-%m-%d %H:%M:%S %Z ", now)
+        if target:
+            prefix += target+' '
+        line = prefix+line
         print(line)
-        self.chatfd.write(line+'\n')
+        self.maintarget.write_line(line, now)
+        if target:
+            self.get_channel(target).write_line(line, now)
+
+    def get_channel(self, target):
+        target = target[1:]
+
+        if not target in self.chtargets:
+            self.chtargets[target] = LogTarget(self.paths, 'channel', target)
+
+        return self.chtargets[target]
 
     def on_welcome(self, bot, event):
         self._chatlogline("Connected to server as "+bot.nickname)
 
     def on_message(self, bot, event):
         line = self.fmt.format(event.source, event.message)
-        self._chatlogline(line)
+        self._chatlogline(line, event.target)
 
     def on_bot_message(self, target, line):
         line = self.fmt.format(self.bot.nickname, line)
-        self._chatlogline(line)
+        self._chatlogline(line, target)
 
     def error(self, msg):
         self._chatlogline("Error: "+msg)
 
     def on_initial_topic(self, target, topic):
-        self._chatlogline("Topic in "+target+" is: "+topic)
+        self._chatlogline("Topic in "+target+" is: "+topic, target)
 
     def on_change_topic(self, changer, target, topic):
-        self._chatlogline(changer+" changed topic in "+target+" to: "+topic)
+        self._chatlogline(changer+" changed topic in "+target+" to: "+topic, target)
 
 class Quotes:
     """Class responsible for the quotes database and printing out a random
