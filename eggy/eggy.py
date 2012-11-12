@@ -1,5 +1,6 @@
 from ircutils import bot
 import random
+import re
 
 class Paths:
     """Class responsible for locating configuration files, logs, quotes and
@@ -37,6 +38,9 @@ class Logger:
         line = self.fmt.format(self.bot.nickname, line)
         self._chatlogline(line)
 
+    def error(self, msg):
+        self._chatlogline("Error: "+msg)
+
 class Quotes:
     """Class responsible for the quotes database and printing out a random
     quote."""
@@ -65,7 +69,7 @@ class Quotes:
 
 class QuoteTrigger:
     def __init__(self, bot):
-        bot.add_message_handler(self.on_message)
+        bot.add_message_handler(self, self.on_message)
 
     def on_message(self, bot, event):
         msg = event.message
@@ -83,7 +87,7 @@ class QuoteTrigger:
 
 class Command:
     def __init__(self, bot, command):
-        bot.add_message_handler(self.on_message)
+        bot.add_message_handler(self, self.on_message)
         self._command = command
 
     def on_message(self, bot, event):
@@ -97,11 +101,33 @@ class AddQuote(Command):
     """Class responsible for the add quote command."""
     def __init__(self, bot):
         super().__init__(bot, "add")
-        bot.add_message_handler(self.on_message)
+        bot.add_message_handler(self, self.on_message)
 
     def on_command(self, bot, event, new_quote):
         bot.quotes.add(new_quote)
         bot.respond(event, "Quote added. "+str(len(bot.quotes))+" quotes in database")
+        return True
+
+class GetQuote(Command):
+    def __init__(self, bot):
+        bot.add_message_handler(self, self.on_message)
+        self.trigger = re.compile('^#(-?[1-9]\d*)?$')
+
+    def on_message(self, bot, event):
+        msg = event.message
+        result = self.trigger.match(msg)
+        if result is None:
+            return False
+        query = result.group(1)
+        if query is None:
+            bot.respond(event, str(len(bot.quotes)))
+            return True
+        number = int(query)
+        if number < 0:
+            number += len(bot.quotes)+1
+        if number > len(bot.quotes) or number <= 0:
+            return False
+        bot.respond(event, bot.quotes[number-1])
         return True
 
 class Eggy(bot.SimpleBot):
@@ -117,20 +143,25 @@ class Eggy(bot.SimpleBot):
         self.logger = Logger(self, self.paths)
         self.quotes = Quotes(self, self.paths)
         self.add_quote = AddQuote(self)
+        self.get_quote = GetQuote(self)
         self.quote_trigger = QuoteTrigger(self)
         self.events["welcome"].add_handler(self.on_welcome)
         self.events["message"].add_handler(self.on_message)
 
-    def add_message_handler(self, handler):
+    def add_message_handler(self, handler, fn):
         """Adds a business logic message handler that returns True when the
         message should be captured and False when the message should be passed
         on."""
-        self.message_handlers += (handler,)
+        self.message_handlers += ((handler,fn),)
 
     def on_message(self, bot, event):
-        for hdl in self.message_handlers:
-            if hdl(bot, event):
-                return
+        for (handler, fn) in self.message_handlers:
+            try:
+                if fn(bot, event):
+                    return
+            except Exception as err:
+                self.logger.error("Handler "+str(handler)+" threw exception "+str(type(err)))
+                self.logger.error(str(err))
 
     def respond(self, event, response):
         self.say(event.target, response)
