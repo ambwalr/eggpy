@@ -86,6 +86,9 @@ class StandardEvent(Event):
             self.target = None
             self.params = []
 
+    def __str__(self):
+        return '<StandardEvent '+str(self.command)+' prefix="'+str(self.prefix)+'" target="'+str(self.target)+'" params="'+str(self.params)+'">'
+
 
 class MessageEvent(StandardEvent):
     """ MessageEvent has all of the attributes as 
@@ -165,8 +168,8 @@ class EventListener(object):
         for p, handler in self.handlers:
             try:
                 handler(*args)
-            except (StandardError, ex):
-                traceback.print_exc(ex)
+            except Exception as ex:
+                print(ex)
                 self.handlers.remove((p, handler))
     
     def notify(self, client, event):

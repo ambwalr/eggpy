@@ -41,6 +41,12 @@ class Logger:
     def error(self, msg):
         self._chatlogline("Error: "+msg)
 
+    def on_initial_topic(self, target, topic):
+        self._chatlogline("Topic in "+target+" is: "+topic)
+
+    def on_change_topic(self, changer, target, topic):
+        self._chatlogline(changer+" changed topic in "+target+" to: "+topic)
+
 class Quotes:
     """Class responsible for the quotes database and printing out a random
     quote."""
@@ -60,12 +66,16 @@ class Quotes:
             raise ValueError()
         self.quotes += [quote]
         self.quotesfd.write(quote+'\n')
+        self.quotesfd.flush()
 
     def __len__(self):
         return len(self.quotes)
 
     def __getitem__(self, key):
         return self.quotes[key]
+
+    def __iter__(self):
+        return iter(self.quotes)
 
 class QuoteTrigger:
     def __init__(self, bot):
@@ -101,14 +111,22 @@ class AddQuote(Command):
     """Class responsible for the add quote command."""
     def __init__(self, bot):
         super().__init__(bot, "add")
-        bot.add_message_handler(self, self.on_message)
 
     def on_command(self, bot, event, new_quote):
+        if new_quote in bot.quotes:
+            bot.respond(event, "ooooold")
+            return True
         bot.quotes.add(new_quote)
+        topic = bot.topics[event.target]
+        if topic:
+            newtopic = re.sub(re.compile(str(len(bot.quotes)-1)), str(len(bot.quotes)), topic)
+            if newtopic != topic:
+                bot.change_topic(event.target, newtopic)
+                return True
         bot.respond(event, "Quote added. "+str(len(bot.quotes))+" quotes in database")
         return True
 
-class GetQuote(Command):
+class GetQuote:
     def __init__(self, bot):
         bot.add_message_handler(self, self.on_message)
         self.trigger = re.compile('^#(-?[1-9]\d*)?$')
@@ -130,11 +148,23 @@ class GetQuote(Command):
         bot.respond(event, bot.quotes[number-1])
         return True
 
+class Rebirth(Command):
+    def __init__(self, bot):
+        super().__init__(bot, "rebirth")
+        self.allowable = re.compile('^[0-9a-zA-Z]+$')
+
+    def on_command(self, bot, event, args):
+        if not self.allowable.match(args):
+            return False
+        bot.set_nickname(args)
+        return True
+
 class Eggy(bot.SimpleBot):
     def __init__(self):
         super(bot.SimpleBot, self).__init__("ravpython")
         self.trigger = 'eggpy'
         self.message_handlers = ()
+        self.topics = {}
 
         # Load modules. The order is important, since the modules will call
         # add_message_handler in their __init__, and the order determines the
@@ -144,9 +174,13 @@ class Eggy(bot.SimpleBot):
         self.quotes = Quotes(self, self.paths)
         self.add_quote = AddQuote(self)
         self.get_quote = GetQuote(self)
+        self.rebirth = Rebirth(self)
         self.quote_trigger = QuoteTrigger(self)
         self.events["welcome"].add_handler(self.on_welcome)
         self.events["message"].add_handler(self.on_message)
+        self.events["reply"].add_handler(self.on_reply)
+        self.events["any"].add_handler(self.on_any)
+        self.events["join"].add_handler(self.on_join)
 
     def add_message_handler(self, handler, fn):
         """Adds a business logic message handler that returns True when the
@@ -173,8 +207,33 @@ class Eggy(bot.SimpleBot):
     def on_welcome(self, bot, event):
         self.join_channel('#ravpython')
 
+    def change_topic(self, target, topic):
+        self.execute('TOPIC', target, trailing=topic)
+
+    def topic_changed(self, target, topic):
+        self.topics[target] = topic
+
+    def on_any(self, bot, event):
+        if event.command == 'TOPIC':
+            self.logger.on_change_topic(event.source, event.target, event.params[0])
+            self.topic_changed(event.target, event.params[0])
+
+    def on_reply(self, bot, event):
+        if event.command == 'RPL_TOPIC':
+            self.logger.on_initial_topic(event.params[0], event.params[1])
+            self.topic_changed(event.params[0], event.params[1])
+
+    def on_join(self, bot, event):
+        self.execute("MODE", event.target)
+
 if __name__ == "__main__":
     bot = Eggy()
     bot.connect('irc.dsau.dk')
     import asyncore
-    asyncore.loop()
+    try:
+        asyncore.loop()
+    except KeyboardInterrupt:
+        bot.logger.error("Keyboard interrupt")
+    except Exception as exn:
+        bot.logger.error("Unhandled exception "+str(type(exn)))
+        bot.logger.error(str(exn))
