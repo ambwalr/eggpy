@@ -15,7 +15,10 @@ class Paths:
         month = time.strftime("%Y%m", now)
         date = time.strftime("%Y%m%d", now)
         d = self.chatlog_base+'/'+kind+'/'+name+'/'+month
-        os.makedirs(d, 0o777, True)
+        try:
+            os.makedirs(d, 0o777)
+        except OSError as err:
+            pass
         return d + '/' + kind + '.' + name + '.' + date + '.txt'
 
 class LogTarget:
