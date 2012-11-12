@@ -45,7 +45,27 @@ class Quotes:
         self.quotesfd.seek(0)
         for quote in self.quotesfd:
             self.quotes += [quote.rstrip('\n\r')]
-        self.size = len(self.quotes)
+
+    def __init__(self, bot, paths):
+        self.paths = paths
+        self.quotesfd = open(paths.quotes, 'a+')
+        self._read_quotes()
+
+    def add(self, quote):
+        if quote == '' or '\n' in quote:
+            raise ValueError()
+        self.quotes += [quote]
+        self.quotesfd.write(quote+'\n')
+
+    def __len__(self):
+        return len(self.quotes)
+
+    def __getitem__(self, key):
+        return self.quotes[key]
+
+class QuoteTrigger:
+    def __init__(self, bot):
+        bot.add_message_handler(self.on_message)
 
     def on_message(self, bot, event):
         msg = event.message
@@ -53,49 +73,35 @@ class Quotes:
         if not bot.trigger in msg:
             return False
 
-        if msg.startswith(bot.trigger+' '):
-            idx = len(bot.trigger)+1
-            cmdline = msg[idx:]
-            bot.respond(event, "Got command line: "+cmdline)
-            (cmd, args) = (cmdline, '')
-            if ' ' in cmdline:
-                (cmd, args) = cmdline.split(' ', 1)
-            return
-
-        if len(self.quotes) == 0:
+        if len(bot.quotes) == 0:
             bot.respond(event, "No quotes")
         else:
-            quote = random.choice(self.quotes)
+            quote = random.choice(bot.quotes)
             bot.respond(event, quote)
 
         return True
 
-    def __init__(self, bot, paths):
-        self.paths = paths
-        self.quotesfd = open(paths.quotes, 'a+')
-        self._read_quotes()
+class Command:
+    def __init__(self, bot, command):
         bot.add_message_handler(self.on_message)
-
-    def add(self, quote):
-        if quote == '' or '\n' in quote:
-            raise ValueError()
-        self.quotes += [quote]
-        self.quotesfd.write(quote+'\n')
-        self.size = len(self.quotes)
-
-class AddQuote:
-    """Class responsible for the add quote command."""
-    def __init__(self, bot):
-        bot.add_message_handler(self.on_message)
+        self._command = command
 
     def on_message(self, bot, event):
-        prefix = bot.trigger+' add '
+        prefix = bot.trigger+' '+self._command+' '
         msg = event.message
         if not msg.startswith(prefix):
             return False
-        new_quote = msg[len(prefix):]
+        return self.on_command(bot, event, msg[len(prefix):])
+
+class AddQuote(Command):
+    """Class responsible for the add quote command."""
+    def __init__(self, bot):
+        super().__init__(bot, "add")
+        bot.add_message_handler(self.on_message)
+
+    def on_command(self, bot, event, new_quote):
         bot.quotes.add(new_quote)
-        bot.respond(event, "Quote added. "+str(bot.quotes.size)+" quotes in database")
+        bot.respond(event, "Quote added. "+str(len(bot.quotes))+" quotes in database")
         return True
 
 class Eggy(bot.SimpleBot):
@@ -109,8 +115,9 @@ class Eggy(bot.SimpleBot):
         # order in which messages are handled.
         self.paths = Paths(self)
         self.logger = Logger(self, self.paths)
-        self.add_quote = AddQuote(self)
         self.quotes = Quotes(self, self.paths)
+        self.add_quote = AddQuote(self)
+        self.quote_trigger = QuoteTrigger(self)
         self.events["welcome"].add_handler(self.on_welcome)
         self.events["message"].add_handler(self.on_message)
 
