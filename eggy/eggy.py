@@ -65,7 +65,7 @@ class Logger:
     def _chatlogline(self, line, target=None):
         """Write a chat line to standard out and the current chat log file."""
         now = time.gmtime()
-        prefix = time.strftime("%Y-%m-%d %H:%M:%S %Z ", now)
+        prefix = time.strftime("%Y-%m-%d %H:%M:%S UTC ", now)
         if target:
             prefix += target+' '
         line = prefix+line
