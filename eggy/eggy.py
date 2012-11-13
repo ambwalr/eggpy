@@ -214,6 +214,31 @@ class Rebirth(Command):
         bot.set_nickname(args)
         return True
 
+class FindQuote(Command):
+    def __init__(self, bot):
+        super(FindQuote, self).__init__(bot, "find")
+
+    def on_command(self, bot, event, args):
+        maximum = 30
+        results = []
+        result = None
+        i = 1
+        for q in bot.quotes:
+            if args in q:
+                results.append(i)
+                result = q
+            i = i + 1
+            if len(results) >= maximum:
+                break
+        if not results:
+            bot.respond(event, "Not found")
+            return True
+        if len(results) == 1:
+            bot.respond(event, str(int(results[0]))+": "+result)
+            return True
+        bot.respond(event, ', '.join(map(str, results)))
+        return True
+
 class Eggy(bot.SimpleBot):
     def __init__(self):
         super(bot.SimpleBot, self).__init__("ravpython")
@@ -229,6 +254,7 @@ class Eggy(bot.SimpleBot):
         self.quotes = Quotes(self, self.paths)
         self.add_quote = AddQuote(self)
         self.get_quote = GetQuote(self)
+        self.find_quote = FindQuote(self)
         self.rebirth = Rebirth(self)
         self.quote_trigger = QuoteTrigger(self)
         self.events["welcome"].add_handler(self.on_welcome)
