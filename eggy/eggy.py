@@ -113,7 +113,10 @@ class Quotes:
 
     def __init__(self, bot, paths):
         self.paths = paths
-        self.quotesfd = open(paths.quotes, 'a+')
+        self._open_quotes()
+
+    def _open_quotes(self):
+        self.quotesfd = open(self.paths.quotes, 'a+')
         self._read_quotes()
 
     def add(self, quote):
@@ -122,6 +125,23 @@ class Quotes:
         self.quotes += [quote]
         self.quotesfd.write(quote+'\n')
         self.quotesfd.flush()
+
+    def set_last(self, quote):
+        self.set_quote(len(self.quotes)-1, quote)
+
+    def set_quote(self, idx, quote):
+        if not self.quotes[idx]:
+            raise ValueError()
+        self.quotes[idx] = quote
+        self._rewrite_quotes()
+
+    def _rewrite_quotes(self):
+        self.quotesfd.close()
+        self.quotesfd = open(self.paths.quotes, 'w')
+        for quote in self.quotes:
+            self.quotesfd.write(quote+'\n')
+        self.quotesfd.close()
+        self._open_quotes()
 
     def __len__(self):
         return len(self.quotes)
@@ -239,6 +259,15 @@ class FindQuote(Command):
         bot.respond(event, ', '.join(map(str, results)))
         return True
 
+class SetQuote(Command):
+    def __init__(self, bot):
+        super(SetQuote, self).__init__(bot, "set last")
+
+    def on_command(self, bot, event, args):
+        bot.quotes.set_last(args)
+        bot.respond(event, 'Done!')
+        return True
+
 class Eggy(bot.SimpleBot):
     def __init__(self):
         super(bot.SimpleBot, self).__init__("ravpython")
@@ -252,11 +281,13 @@ class Eggy(bot.SimpleBot):
         self.paths = Paths(self)
         self.logger = Logger(self, self.paths)
         self.quotes = Quotes(self, self.paths)
-        self.add_quote = AddQuote(self)
-        self.get_quote = GetQuote(self)
-        self.find_quote = FindQuote(self)
-        self.rebirth = Rebirth(self)
-        self.quote_trigger = QuoteTrigger(self)
+        self.commands = []
+        self.commands.append(AddQuote(self))
+        self.commands.append(GetQuote(self))
+        self.commands.append(FindQuote(self))
+        self.commands.append(Rebirth(self))
+        self.commands.append(SetQuote(self))
+        self.commands.append(QuoteTrigger(self))
         self.events["welcome"].add_handler(self.on_welcome)
         self.events["message"].add_handler(self.on_message)
         self.events["reply"].add_handler(self.on_reply)
