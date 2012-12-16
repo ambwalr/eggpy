@@ -60,7 +60,10 @@ class Connection(asynchat.async_chat):
     
     def found_terminator(self):
         """ Activated when ``\\r\\n`` is encountered. Do not call directly. """
-        data = "".encode().join(self.incoming).decode()
+        try:
+            data = "".encode().join(self.incoming).decode('utf-8')
+        except (UnicodeError, why):
+            data = "".encode().join(self.incoming).decode('latin1', 'ignore')
         self.incoming = []
         prefix, command, params = protocol.parse_line(data)
         if command == "PING" and self.ping_auto_respond:

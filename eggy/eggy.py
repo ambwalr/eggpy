@@ -3,6 +3,10 @@ import random
 import re
 import time
 import os
+import codecs
+
+def open(filename, mode):
+    return codecs.open(filename, mode, 'utf-8')
 
 class Paths:
     """Class responsible for locating configuration files, logs, quotes and
@@ -68,7 +72,7 @@ class Logger:
         prefix = time.strftime("%Y-%m-%d %H:%M:%S UTC ", now)
         if target:
             prefix += target+' '
-        line = prefix+line
+        line = (prefix+line).encode('utf-8')
         print(line)
         self.maintarget.write_line(line, now)
         if target:
