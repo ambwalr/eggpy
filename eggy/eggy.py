@@ -72,8 +72,8 @@ class Logger:
         prefix = time.strftime("%Y-%m-%d %H:%M:%S UTC ", now)
         if target:
             prefix += target+' '
-        line = (prefix+line).encode('utf-8')
-        print(line)
+        line = prefix+line
+        print(line.encode('utf-8'))
         self.maintarget.write_line(line, now)
         if target:
             self.get_channel(target).write_line(line, now)
