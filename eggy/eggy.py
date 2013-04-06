@@ -238,7 +238,15 @@ class Rebirth(Command):
             return True
         bot.set_nickname(args)
         return True
+        
+class Say(Command):
+    def __init__(self, bot):
+        super(Say, self).__init__(bot, "say")
 
+    def on_command(self, bot, event, args):
+        bot.respond(event, args)
+        return True
+        
 class FindQuote(Command):
     def __init__(self, bot):
         super(FindQuote, self).__init__(bot, "find")
@@ -291,6 +299,7 @@ class Eggy(bot.SimpleBot):
         self.commands.append(GetQuote(self))
         self.commands.append(FindQuote(self))
         self.commands.append(Rebirth(self))
+        self.commands.append(Say(self))
         self.commands.append(SetQuote(self))
         self.commands.append(QuoteTrigger(self))
         self.events["welcome"].add_handler(self.on_welcome)
