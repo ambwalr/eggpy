@@ -324,6 +324,39 @@ class Eggy(bot.SimpleBot):
                 self.logger.error(str(err))
 
     def respond(self, event, response):
+
+        # $variable replacements START, first up is $nick, ALSO THIS PROBABLY IS BAD
+
+        response = response.replace("$nick", event.source)
+        response = response.replace("$Nick", event.source)
+        response = response.replace("$NICK", event.source.upper())
+
+        # then we got this bro called $onick
+
+        response = response.replace("$onick", random.choice(bot.channels[event.target].user_list))
+        response = response.replace("$oNick", random.choice(bot.channels[event.target].user_list))
+        response = response.replace("$ONICK", random.choice(bot.channels[event.target].user_list).upper())
+
+        # next up is $verb, doing handsomely with his bros
+
+        response = response.replace("$verb", "poo")
+        response = response.replace("$Verb", "Poo")
+        response = response.replace("$VERB", "POO")
+
+        # and then we got ourselves a $adjective
+
+        response = response.replace("$adjective", "terrible")
+        response = response.replace("$Adjective", "Terrible")
+        response = response.replace("$ADJECTIVE", "TERRIBLE")
+
+        # and can't forget our bro super$noun
+
+        response = response.replace("$noun", "egg")
+        response = response.replace("$Noun", "Egg")
+        response = response.replace("$NOUN", "EGG")
+
+        # $variable replacements END
+
         self.say(event.target, response)
 
     def say(self, target, line):
