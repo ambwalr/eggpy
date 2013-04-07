@@ -62,7 +62,6 @@ class Logger:
         self.paths = paths
         self.maintarget = LogTarget(paths, 'main', 'main')
         self.chtargets = {}
-        # We don't use add_message_handler, because we always want to capture messages
         bot.events["message"].add_handler(self.on_message)
         bot.events["welcome"].add_handler(self.on_welcome)
 
@@ -157,9 +156,6 @@ class Quotes:
         return iter(self.quotes)
 
 class QuoteTrigger:
-    def __init__(self, bot):
-        bot.add_message_handler(self, self.on_message)
-
     def on_message(self, bot, event):
         msg = event.message
 
@@ -175,22 +171,14 @@ class QuoteTrigger:
         return True
 
 class Command(object):
-    def __init__(self, bot, command):
-        bot.add_message_handler(self, self.on_message)
-        self._command = command
-
     def on_message(self, bot, event):
-        prefix = bot.trigger+' '+self._command+' '
+        prefix = bot.trigger+' '+self.trigger+' '
         msg = event.message
         if not msg.startswith(prefix):
             return False
         return self.on_command(bot, event, msg[len(prefix):])
 
 class AddQuote(Command):
-    """Class responsible for the add quote command."""
-    def __init__(self, bot):
-        super(AddQuote, self).__init__(bot, "add")
-
     def on_command(self, bot, event, new_quote):
         if new_quote in bot.quotes:
             bot.respond(event, "ooooold")
@@ -206,8 +194,7 @@ class AddQuote(Command):
         return True
 
 class GetQuote:
-    def __init__(self, bot):
-        bot.add_message_handler(self, self.on_message)
+    def __init__(self):
         self.trigger = re.compile('^#(-?[1-9]\d*)?$')
 
     def on_message(self, bot, event):
@@ -228,8 +215,7 @@ class GetQuote:
         return True
 
 class Rebirth(Command):
-    def __init__(self, bot):
-        super(Rebirth, self).__init__(bot, "rebirth")
+    def __init__(self):
         self.allowable = re.compile('^[0-9a-zA-Z]+$')
 
     def on_command(self, bot, event, args):
@@ -240,17 +226,11 @@ class Rebirth(Command):
         return True
         
 class Say(Command):
-    def __init__(self, bot):
-        super(Say, self).__init__(bot, "say")
-
     def on_command(self, bot, event, args):
         bot.respond(event, args)
         return True
         
 class FindQuote(Command):
-    def __init__(self, bot):
-        super(FindQuote, self).__init__(bot, "find")
-
     def on_command(self, bot, event, args):
         maximum = 30
         results = []
@@ -273,9 +253,6 @@ class FindQuote(Command):
         return True
 
 class SetQuote(Command):
-    def __init__(self, bot):
-        super(SetQuote, self).__init__(bot, "set last")
-
     def on_command(self, bot, event, args):
         bot.quotes.set_last(args)
         bot.respond(event, 'Done!')
@@ -288,39 +265,47 @@ class Eggy(bot.SimpleBot):
         self.message_handlers = ()
         self.topics = {}
 
-        # Load modules. The order is important, since the modules will call
-        # add_message_handler in their __init__, and the order determines the
-        # order in which messages are handled.
+        # Load modules.
         self.paths = Paths(self)
         self.logger = Logger(self, self.paths)
         self.quotes = Quotes(self, self.paths)
-        self.commands = []
-        self.commands.append(AddQuote(self))
-        self.commands.append(GetQuote(self))
-        self.commands.append(FindQuote(self))
-        self.commands.append(Rebirth(self))
-        self.commands.append(Say(self))
-        self.commands.append(SetQuote(self))
-        self.commands.append(QuoteTrigger(self))
+
+        self.noncommands = (
+                GetQuote,
+                QuoteTrigger,
+                )
+
+        self.commands = (
+                ('add', AddQuote),
+                ('find', FindQuote),
+                ('rebirth', Rebirth),
+                ('say', Say),
+                ('set quote', SetQuote),
+                )
+
         self.events["welcome"].add_handler(self.on_welcome)
         self.events["message"].add_handler(self.on_message)
         self.events["reply"].add_handler(self.on_reply)
         self.events["any"].add_handler(self.on_any)
         self.events["join"].add_handler(self.on_join)
 
-    def add_message_handler(self, handler, fn):
-        """Adds a business logic message handler that returns True when the
-        message should be captured and False when the message should be passed
-        on."""
-        self.message_handlers += ((handler,fn),)
-
     def on_message(self, bot, event):
-        for (handler, fn) in self.message_handlers:
+        for (command, handler) in self.commands:
             try:
-                if fn(bot, event):
+                fn = handler()
+                fn.trigger = command
+                if fn.on_message(bot, event):
                     return
             except Exception as err:
-                self.logger.error("Handler "+str(handler)+" threw exception "+str(type(err)))
+                self.logger.error("Command ["+str(command)+"] threw exception "+str(type(err)))
+                self.logger.error(str(err))
+        for handler in self.noncommands:
+            try:
+                fn = handler()
+                if fn.on_message(bot, event):
+                    return
+            except Exception as err:
+                self.logger.error("Non-command ["+str(handler)+"] threw exception "+str(type(err)))
                 self.logger.error(str(err))
 
     def respond(self, event, response):
