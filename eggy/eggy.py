@@ -161,7 +161,6 @@ class QuoteTrigger:
 
         if not bot.trigger in msg:
             return False
-
         if len(bot.quotes) == 0:
             bot.respond(event, "No quotes")
         else:
@@ -212,6 +211,28 @@ class GetQuote:
         if number > len(bot.quotes) or number <= 0:
             return False
         bot.respond(event, bot.quotes[number-1])
+        return True
+
+class GetY:
+    def __init__(self):
+        self.trigger = re.compile(r'^:Y (..*)$')
+
+    def on_message(self, bot, event):
+        msg = event.message
+        result = self.trigger.match(msg)
+        if result is None:
+            return False
+        msg = msg[3:]
+        buttQuotes = []
+        for q in bot.quotes:
+            if msg in q:
+                buttQuotes.append(q)
+        if len(buttQuotes) == 0:
+            quote = random.choice(bot.quotes)
+            bot.respond(event, quote)
+        else:
+            quote = random.choice(buttQuotes)
+            bot.respond(event, quote)
         return True
 
 class Rebirth(Command):
@@ -272,6 +293,7 @@ class Eggy(bot.SimpleBot):
 
         self.noncommands = (
                 GetQuote,
+                GetY,
                 QuoteTrigger,
                 )
 
