@@ -225,7 +225,7 @@ class GetY:
         msg = msg[3:]
         buttQuotes = []
         for q in bot.quotes:
-            if msg in q:
+            if msg.lower() in q.lower():
                 buttQuotes.append(q)
         if len(buttQuotes) == 0:
             quote = random.choice(bot.quotes)
@@ -258,7 +258,7 @@ class FindQuote(Command):
         result = None
         i = 1
         for q in bot.quotes:
-            if args in q:
+            if args.lower() in q.lower():
                 results.append(i)
                 result = q
             i = i + 1
