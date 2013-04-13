@@ -302,7 +302,7 @@ class Eggy(bot.SimpleBot):
                 ('find', FindQuote),
                 ('rebirth', Rebirth),
                 ('say', Say),
-                ('set quote', SetQuote),
+                ('set last', SetQuote),
                 )
 
         self.events["welcome"].add_handler(self.on_welcome)
