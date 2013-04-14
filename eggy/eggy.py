@@ -279,6 +279,41 @@ class SetQuote(Command):
         bot.respond(event, 'Done!')
         return True
 
+class RelayMessages:
+    def on_message(self, bot, event):
+
+        if not event.source in bot.messagesToRelay.keys():
+            return False
+
+        if len(bot.messagesToRelay[event.source]) >= 2:
+            indexNumber = 1
+            bot.respond(event, str(event.source) + " you have new messaeggs, first messaegg: " + str(bot.messagesToRelay[event.source][0]))
+            del bot.messagesToRelay[event.source][0]
+            for msgToRelay in bot.messagesToRelay[event.source]:
+                bot.respond(event, "messaegg #" + str(indexNumber+1) + ": " + str(msgToRelay))
+                indexNumber += 1
+        else:
+            bot.respond(event, str(event.source) + " you have a new messaegg: " + str(bot.messagesToRelay[event.source][0]))
+
+        del bot.messagesToRelay[event.source]
+
+        return True
+
+class Tell(Command):
+    def on_command(self, bot, event, args):
+        if len(args.split()) >= 2:
+            personToTell = args.split(None, 1)[0]
+            messageToTell = args.split(None, 1)[1]
+            bot.respond(event, "okay buddy, I'll tell " + str(personToTell) + " the following: " + str(messageToTell))
+            if personToTell in bot.messagesToRelay.keys():
+                bot.messagesToRelay[personToTell].append(messageToTell)
+            else:
+                bot.messagesToRelay[personToTell] = [messageToTell]
+            return True
+        else:
+            bot.respond(event, "WHAT, I'M BREGGING UP, SAY THAT EGGAIN")
+            return True
+
 class Eggy(bot.SimpleBot):
     def __init__(self):
         super(bot.SimpleBot, self).__init__("ravpython")
@@ -303,6 +338,7 @@ class Eggy(bot.SimpleBot):
                 ('rebirth', Rebirth),
                 ('say', Say),
                 ('set last', SetQuote),
+                ('tell', Tell),
                 )
 
         self.events["welcome"].add_handler(self.on_welcome)
