@@ -302,9 +302,15 @@ class RelayMessages:
 class Tell(Command):
     def on_command(self, bot, event, args):
         if "me about" in args:
+            if len(bot.messagesToRelay.keys()) == 0:
+                bot.respond(event, "NOBODY HAS ANY MESSAEGGS, EGG OFF")
+                return True
             personToTellAbout = args.split()[2]
             if personToTellAbout in bot.messagesToRelay.keys():
                 bot.respond(event, str(personToTellAbout) + " has " + str(len(bot.messagesToRelay[personToTellAbout])) + " messaeggs waiting")
+                return True
+            elif personToTellAbout == "everybody":
+                bot.respond(event, "messaeggs for the following: " + str(', '.join(map(str, bot.messagesToRelay.keys()))))
                 return True
             else:
                 bot.respond(event, "no messaeggs for " + str(personToTellAbout))
