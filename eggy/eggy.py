@@ -303,7 +303,6 @@ class Tell(Command):
     def on_command(self, bot, event, args):
         if "me about" in args:
             personToTellAbout = args.split()[2]
-            print("test1")
             if personToTellAbout in bot.messagesToRelay.keys():
                 bot.respond(event, str(personToTellAbout) + " has " + str(len(bot.messagesToRelay[personToTellAbout])) + " messaeggs waiting")
                 return True
