@@ -282,57 +282,57 @@ class SetQuote(Command):
 class RelayMessages:
     def on_message(self, bot, event):
 
-        if not event.source in bot.messagesToRelay.keys():
+        if not event.source in bot.messages_to_relay.keys():
             return False
 
-        if len(bot.messagesToRelay[event.source]) >= 2:
+        if len(bot.messages_to_relay[event.source]) >= 2:
             indexNumber = 1
-            bot.respond(event, str(event.source) + " you have new messaeggs, first messaegg: " + str(bot.messagesToRelay[event.source][0]))
-            del bot.messagesToRelay[event.source][0]
-            for msgToRelay in bot.messagesToRelay[event.source]:
+            bot.respond(event, str(event.source) + " you have new messaeggs, first messaegg: " + str(bot.messages_to_relay[event.source][0]))
+            del bot.messages_to_relay[event.source][0]
+            for msgToRelay in bot.messages_to_relay[event.source]:
                 bot.respond(event, "messaegg #" + str(indexNumber+1) + ": " + str(msgToRelay))
                 indexNumber += 1
         else:
-            bot.respond(event, str(event.source) + " you have a new messaegg: " + str(bot.messagesToRelay[event.source][0]))
+            bot.respond(event, str(event.source) + " you have a new messaegg: " + str(bot.messages_to_relay[event.source][0]))
 
-        del bot.messagesToRelay[event.source]
+        del bot.messages_to_relay[event.source]
 
         return True
 
 class Tell(Command):
     def on_command(self, bot, event, args):
         if "me about" in args:
-            if len(bot.messagesToRelay.keys()) == 0:
+            if len(bot.messages_to_relay.keys()) == 0:
                 bot.respond(event, "NOBODY HAS ANY MESSAEGGS, EGG OFF")
                 return True
-            personToTellAbout = args.split()[2]
-            if personToTellAbout in bot.messagesToRelay.keys():
-                bot.respond(event, str(personToTellAbout) + " has " + str(len(bot.messagesToRelay[personToTellAbout])) + " messaeggs waiting")
+            person_to_tell_about = args.split()[2]
+            if person_to_tell_about in bot.messages_to_relay.keys():
+                bot.respond(event, str(person_to_tell_about) + " has " + str(len(bot.messages_to_relay[person_to_tell_about])) + " messaeggs waiting")
                 return True
-            elif personToTellAbout == "everybody":
-                bot.respond(event, "messaeggs for the following: " + str(', '.join(map(str, bot.messagesToRelay.keys()))))
+            elif person_to_tell_about == "everybody":
+                bot.respond(event, "messaeggs for the following: " + str(', '.join(map(str, bot.messages_to_relay.keys()))))
                 return True
             else:
-                bot.respond(event, "no messaeggs for " + str(personToTellAbout))
+                bot.respond(event, "no messaeggs for " + str(person_to_tell_about))
                 return True
         elif args.split()[1] == "nothing" and len(args.split()) <= 2:
-            personToEmpty = args.split()[0]
-            if personToEmpty in bot.messagesToRelay.keys():
-                del bot.messagesToRelay[personToEmpty]
-                bot.respond(event, "I JUST FORGOT THINGS ABOUT " + str(personToEmpty).upper())
+            person_to_empty = args.split()[0]
+            if person_to_empty in bot.messages_to_relay.keys():
+                del bot.messages_to_relay[person_to_empty]
+                bot.respond(event, "I JUST FORGOT THINGS ABOUT " + str(person_to_empty).upper())
                 return True
             else:
-                bot.respond(event, str(personToEmpty) + " who???")
+                bot.respond(event, str(person_to_empty) + " who???")
                 return True
 
         if len(args.split()) >= 2:
-            personToTell = args.split(None, 1)[0]
-            messageToTell = args.split(None, 1)[1]
-            bot.respond(event, "okay buddy, I'll tell " + str(personToTell) + " the following: " + str(messageToTell))
-            if personToTell in bot.messagesToRelay.keys():
-                bot.messagesToRelay[personToTell].append("<" + str(event.source) + "> " + str(messageToTell))
+            person_to_tell = args.split(None, 1)[0]
+            message_to_tell = args.split(None, 1)[1]
+            bot.respond(event, "okay buddy, I'll tell " + str(person_to_tell) + " the following: " + str(message_to_tell))
+            if person_to_tell in bot.messages_to_relay.keys():
+                bot.messages_to_relay[person_to_tell].append("<" + str(event.source) + "> " + str(message_to_tell))
             else:
-                bot.messagesToRelay[personToTell] = [("<" + str(event.source) + "> " + str(messageToTell))]
+                bot.messages_to_relay[person_to_tell] = [("<" + str(event.source) + "> " + str(message_to_tell))]
             return True
         else:
             bot.respond(event, "WHAT, I'M BREGGING UP, SAY THAT EGGAIN")
@@ -344,6 +344,7 @@ class Eggy(bot.SimpleBot):
         self.trigger = 'eggpy'
         self.message_handlers = ()
         self.topics = {}
+        self.messages_to_relay = {}
 
         # Load modules.
         self.paths = Paths(self)
@@ -354,6 +355,7 @@ class Eggy(bot.SimpleBot):
                 GetQuote,
                 GetY,
                 QuoteTrigger,
+                RelayMessages,
                 )
 
         self.commands = (
