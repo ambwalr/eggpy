@@ -330,9 +330,9 @@ class Tell(Command):
             messageToTell = args.split(None, 1)[1]
             bot.respond(event, "okay buddy, I'll tell " + str(personToTell) + " the following: " + str(messageToTell))
             if personToTell in bot.messagesToRelay.keys():
-                bot.messagesToRelay[personToTell].append(messageToTell)
+                bot.messagesToRelay[personToTell].append("<" + str(event.source) + "> " + str(messageToTell))
             else:
-                bot.messagesToRelay[personToTell] = [messageToTell]
+                bot.messagesToRelay[personToTell] = [("<" + str(event.source) + "> " + str(messageToTell))]
             return True
         else:
             bot.respond(event, "WHAT, I'M BREGGING UP, SAY THAT EGGAIN")
