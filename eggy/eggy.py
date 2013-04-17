@@ -6,6 +6,7 @@ import os
 import codecs
 
 from . import settings
+from . import commands
 
 def open(filename, mode):
     return codecs.open(filename, mode, 'utf-8')
@@ -157,189 +158,6 @@ class Quotes:
     def __iter__(self):
         return iter(self.quotes)
 
-class QuoteTrigger:
-    def on_message(self, bot, event):
-        msg = event.message
-
-        if not bot.trigger in msg:
-            return False
-        if len(bot.quotes) == 0:
-            bot.respond(event, "No quotes")
-        else:
-            quote = random.choice(bot.quotes)
-            bot.respond(event, quote)
-
-        return True
-
-class Command(object):
-    def on_message(self, bot, event):
-        prefix = bot.trigger+' '+self.trigger+' '
-        msg = event.message
-        if not msg.startswith(prefix):
-            return False
-        return self.on_command(bot, event, msg[len(prefix):])
-
-class AddQuote(Command):
-    def on_command(self, bot, event, new_quote):
-        if new_quote in bot.quotes:
-            bot.respond(event, "ooooold")
-            return True
-        bot.quotes.add(new_quote)
-        topic = bot.topics[event.target]
-        if topic:
-            newtopic = re.sub(re.compile(str(len(bot.quotes)-1)), str(len(bot.quotes)), topic)
-            if newtopic != topic:
-                bot.change_topic(event.target, newtopic)
-                return True
-        bot.respond(event, "Quote added. "+str(len(bot.quotes))+" quotes in database")
-        return True
-
-class GetQuote:
-    def __init__(self):
-        self.trigger = re.compile('^#(-?[1-9]\d*)?$')
-
-    def on_message(self, bot, event):
-        msg = event.message
-        result = self.trigger.match(msg)
-        if result is None:
-            return False
-        query = result.group(1)
-        if query is None:
-            bot.respond(event, str(len(bot.quotes)))
-            return True
-        number = int(query)
-        if number < 0:
-            number += len(bot.quotes)+1
-        if number > len(bot.quotes) or number <= 0:
-            return False
-        bot.respond(event, bot.quotes[number-1])
-        return True
-
-class GetY:
-    def __init__(self):
-        self.trigger = re.compile(r'^:Y (..*)$')
-
-    def on_message(self, bot, event):
-        msg = event.message
-        result = self.trigger.match(msg)
-        if result is None:
-            return False
-        msg = msg[3:]
-        buttQuotes = []
-        for q in bot.quotes:
-            if msg.lower() in q.lower():
-                buttQuotes.append(q)
-        if len(buttQuotes) == 0:
-            quote = random.choice(bot.quotes)
-            bot.respond(event, quote)
-        else:
-            quote = random.choice(buttQuotes)
-            bot.respond(event, quote)
-        return True
-
-class Rebirth(Command):
-    def __init__(self):
-        self.allowable = re.compile('^[0-9a-zA-Z]+$')
-
-    def on_command(self, bot, event, args):
-        if not self.allowable.match(args):
-            bot.respond(event, "i'm afraid i can't let you do that $nick")
-            return True
-        bot.set_nickname(args)
-        return True
-        
-class Say(Command):
-    def on_command(self, bot, event, args):
-        bot.respond(event, args)
-        return True
-        
-class FindQuote(Command):
-    def on_command(self, bot, event, args):
-        maximum = 30
-        results = []
-        result = None
-        i = 1
-        for q in bot.quotes:
-            if args.lower() in q.lower():
-                results.append(i)
-                result = q
-            i = i + 1
-            if len(results) >= maximum:
-                break
-        if not results:
-            bot.respond(event, "Not found")
-            return True
-        if len(results) == 1:
-            bot.respond(event, str(int(results[0]))+": "+result)
-            return True
-        bot.respond(event, ', '.join(map(str, results)))
-        return True
-
-class SetQuote(Command):
-    def on_command(self, bot, event, args):
-        bot.quotes.set_last(args)
-        bot.respond(event, 'Done!')
-        return True
-
-class RelayMessages:
-    def on_message(self, bot, event):
-
-        if not event.source in bot.messages_to_relay.keys():
-            return False
-
-        if len(bot.messages_to_relay[event.source]) >= 2:
-            indexNumber = 1
-            bot.respond(event, str(event.source) + " you have new messaeggs, first messaegg: " + str(bot.messages_to_relay[event.source][0]))
-            del bot.messages_to_relay[event.source][0]
-            for msgToRelay in bot.messages_to_relay[event.source]:
-                bot.respond(event, "messaegg #" + str(indexNumber+1) + ": " + str(msgToRelay))
-                indexNumber += 1
-        else:
-            bot.respond(event, str(event.source) + " you have a new messaegg: " + str(bot.messages_to_relay[event.source][0]))
-
-        del bot.messages_to_relay[event.source]
-
-        return True
-
-class Tell(Command):
-    def on_command(self, bot, event, args):
-        if "me about" in args:
-            if len(bot.messages_to_relay.keys()) == 0:
-                bot.respond(event, "NOBODY HAS ANY MESSAEGGS, EGG OFF")
-                return True
-            person_to_tell_about = args.split()[2]
-            if person_to_tell_about in bot.messages_to_relay.keys():
-                bot.respond(event, str(person_to_tell_about) + " has " + str(len(bot.messages_to_relay[person_to_tell_about])) + " messaeggs waiting")
-                return True
-            elif person_to_tell_about == "everybody":
-                bot.respond(event, "messaeggs for the following: " + str(', '.join(map(str, bot.messages_to_relay.keys()))))
-                return True
-            else:
-                bot.respond(event, "no messaeggs for " + str(person_to_tell_about))
-                return True
-        elif args.split()[1] == "nothing" and len(args.split()) <= 2:
-            person_to_empty = args.split()[0]
-            if person_to_empty in bot.messages_to_relay.keys():
-                del bot.messages_to_relay[person_to_empty]
-                bot.respond(event, "I JUST FORGOT THINGS ABOUT " + str(person_to_empty).upper())
-                return True
-            else:
-                bot.respond(event, str(person_to_empty) + " who???")
-                return True
-
-        if len(args.split()) >= 2:
-            person_to_tell = args.split(None, 1)[0]
-            message_to_tell = args.split(None, 1)[1]
-            bot.respond(event, "okay buddy, I'll tell " + str(person_to_tell) + " the following: " + str(message_to_tell))
-            if person_to_tell in bot.messages_to_relay.keys():
-                bot.messages_to_relay[person_to_tell].append("<" + str(event.source) + "> " + str(message_to_tell))
-            else:
-                bot.messages_to_relay[person_to_tell] = [("<" + str(event.source) + "> " + str(message_to_tell))]
-            return True
-        else:
-            bot.respond(event, "WHAT, I'M BREGGING UP, SAY THAT EGGAIN")
-            return True
-
 class Eggy(bot.SimpleBot):
     def __init__(self):
         super(bot.SimpleBot, self).__init__(settings.IDENT)
@@ -354,19 +172,19 @@ class Eggy(bot.SimpleBot):
         self.quotes = Quotes(self, self.paths)
 
         self.noncommands = (
-                GetQuote,
-                GetY,
-                QuoteTrigger,
-                RelayMessages,
+                commands.GetQuote,
+                commands.GetY,
+                commands.QuoteTrigger,
+                commands.RelayMessages,
                 )
 
         self.commands = (
-                ('add', AddQuote),
-                ('find', FindQuote),
-                ('rebirth', Rebirth),
-                ('say', Say),
-                ('set last', SetQuote),
-                ('tell', Tell),
+                ('add', commands.AddQuote),
+                ('find', commands.FindQuote),
+                ('rebirth', commands.Rebirth),
+                ('say', commands.Say),
+                ('set last', commands.SetQuote),
+                ('tell', commands.Tell),
                 )
 
         self.events["welcome"].add_handler(self.on_welcome)
