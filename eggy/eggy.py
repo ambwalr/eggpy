@@ -402,9 +402,9 @@ class Eggy(bot.SimpleBot):
 
         # then we got this bro called $onick
 
-        response = response.replace("$onick", random.choice(bot.channels[event.target].user_list))
-        response = response.replace("$oNick", random.choice(bot.channels[event.target].user_list))
-        response = response.replace("$ONICK", random.choice(bot.channels[event.target].user_list).upper())
+        response = response.replace("$onick", random.choice(self.channels[event.target].user_list))
+        response = response.replace("$oNick", random.choice(self.channels[event.target].user_list))
+        response = response.replace("$ONICK", random.choice(self.channels[event.target].user_list).upper())
 
         # next up is $verb, doing handsomely with his bros
 
