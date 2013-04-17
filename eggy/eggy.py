@@ -5,6 +5,8 @@ import time
 import os
 import codecs
 
+from . import settings
+
 def open(filename, mode):
     return codecs.open(filename, mode, 'utf-8')
 
@@ -340,8 +342,8 @@ class Tell(Command):
 
 class Eggy(bot.SimpleBot):
     def __init__(self):
-        super(bot.SimpleBot, self).__init__("ravpython")
-        self.trigger = 'eggpy'
+        super(bot.SimpleBot, self).__init__(settings.IDENT)
+        self.trigger = settings.TRIGGER
         self.message_handlers = ()
         self.topics = {}
         self.messages_to_relay = {}
@@ -433,7 +435,7 @@ class Eggy(bot.SimpleBot):
         self.logger.on_bot_message(target, line)
 
     def on_welcome(self, bot, event):
-        self.join_channel('#ravpython')
+        self.join_channel(settings.CHANNEL)
 
     def change_topic(self, target, topic):
         self.execute('TOPIC', target, trailing=topic)

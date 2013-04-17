@@ -1,0 +1,5 @@
+SERVER = 'irc.dsau.dk'
+CHANNEL = '#ravpython'
+IDENT = 'ravpython'
+NICK = 'eggpy'
+TRIGGER = 'eggpy'
