@@ -455,15 +455,3 @@ class Eggy(bot.SimpleBot):
 
     def on_join(self, bot, event):
         self.execute("MODE", event.target)
-
-if __name__ == "__main__":
-    bot = Eggy()
-    bot.connect('irc.dsau.dk')
-    import asyncore
-    try:
-        asyncore.loop()
-    except KeyboardInterrupt:
-        bot.logger.error("Keyboard interrupt")
-    except Exception as exn:
-        bot.logger.error("Unhandled exception "+str(type(exn)))
-        bot.logger.error(str(exn))
