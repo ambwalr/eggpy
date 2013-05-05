@@ -185,6 +185,7 @@ class Eggy(bot.SimpleBot):
                 ('say', commands.Say),
                 ('set last', commands.SetQuote),
                 ('tell', commands.Tell),
+                ('tag', commands.Tag),
                 )
 
         self.events["welcome"].add_handler(self.on_welcome)
