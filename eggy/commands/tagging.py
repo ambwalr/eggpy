@@ -18,6 +18,13 @@ def topTags( limit=5 ):
     conn.close()
     return toptags
 
+def addTag( tagname, quoteid, user ):
+    conn,c=conopen()
+    query = 'insert into tags ( tagname, quoteid, user ) values (?,?,?)'
+    c.execute(query,[tagname,quoteid,user])
+    conn.close()
+    return
+
 def findquotesbytag( tag ):
     conn,c=conopen()
     c.execute(
@@ -48,8 +55,16 @@ def ircFindTagCount( tagname ):
     return "{} quotes tagged {}".format(len(results), ircFormatTag(tagname))
 
 def ircFindTaggedQuotes( tagname ):
-    resultslimit = 8
-    out=out+quotenumsformat(results[0:resultslimit])
+    results=findquotesbytag(tagname)
+    out ="{} results for {}: ".format(len(results), ircFormatTag(tagname))
+    chunksize = 8
+    if len(results) > chunksize*2:
+      out+=quotenumsformat(results[0:chunksize])
+      out+=" (...) "
+      last = len(results)-1
+      out+=quotenumsformat(results[last-chunksize:last])
+    else:
+      out+=quotenumsformat(results)
     return out
 
 #not even using this
@@ -62,11 +77,17 @@ def chunks(l,n):
 class Tag(Command):
     def on_command(self, bot, event, args):
         results = "huh?"
+        if "find" in args:
+          args=args.split(' ',1)[1]
+          results = ircFindTaggedQuotes( args )
         if "list" in args:
           results = ircTopTags()
         if "count" in args:
-          args = args.split(' ',1)[1]
+          args=args.split(' ',1)[1]
           results = ircFindTagCount( args )
+        if "add" in args:
+          results = "nope"
         bot.respond(event, results)
         return True
+
 
