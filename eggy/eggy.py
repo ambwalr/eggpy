@@ -216,6 +216,7 @@ class Eggy(bot.SimpleBot):
     def respond(self, event, response):
 
         # $variable replacements START, first up is $nick, ALSO THIS PROBABLY IS BAD
+        response=re.sub(r"\$([A-Za-z]+)(1)?", commands.wikiwordlist.replword, response)
 
         response = response.replace("$nick", event.source)
         response = response.replace("$Nick", event.source)
