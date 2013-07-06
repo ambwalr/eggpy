@@ -34,6 +34,13 @@ def findquotesbytag( tag ):
     conn.close()
     return res
 
+def findtagsbyquote( num ):
+    conn,c=conopen()
+    c.execute('SELECT tagname FROM tags WHERE quoteid =?',[num])
+    res=[r[0] for r in c.fetchall()]
+    conn.close()
+    return res
+
 def ircFormatTag(tagname):
     return '[{}]'.format(tagname)
 
@@ -46,13 +53,21 @@ def ircTopTags():
     top = map( tc, popular )
     return "top tags: "+', '.join(top)
 
+def quotenumformat( quotenum ):
+    return '#'+str(quotenum)
 def quotenumsformat( quotelist ):
-    ids=['#'+str(res) for res in quotelist]
+    ids=[quotenumformat(res) for res in quotelist]
     return ', '.join(ids)
 
 def ircFindTagCount( tagname ):
     results=findquotesbytag(tagname)
     return "{} quotes tagged {}".format(len(results), ircFormatTag(tagname))
+
+def ircFindTagsByQuote( num ):
+    results=findtagsbyquote(num)
+    tags=' '.join(map( ircFormatTag, results ))
+    if tags=='': tags ='none'
+    return "quote {} tags: {}".format( quotenumformat(num), tags )
 
 def ircFindTaggedQuotes( tagname ):
     results=findquotesbytag(tagname)
@@ -82,6 +97,9 @@ class Tag(Command):
           results = ircFindTaggedQuotes( args )
         if "list" in args:
           results = ircTopTags()
+        if "for" in args:
+          args=args.split(' ',1)[1]
+          results = ircFindTagsByQuote( args )
         if "count" in args:
           args=args.split(' ',1)[1]
           results = ircFindTagCount( args )
