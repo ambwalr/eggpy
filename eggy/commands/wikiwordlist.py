@@ -23,6 +23,8 @@ def getwikiwordlist():
             ff[currentkey].append(fixedline)
     return ff
 
+cachedlist = getwikiwordlist()
+
 def randword(dictionary,word):
     ff = dictionary
     suffix=""
@@ -39,7 +41,7 @@ def randword(dictionary,word):
         return "-REDACTED-"
 
 def replword(matchobj):
-    dictionary = getwikiwordlist()
+    dictionary = cachedlist
     mg=matchobj.groups()
     m=mg[0].replace("$","")
     return randword( dictionary, m )
