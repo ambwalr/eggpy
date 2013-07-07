@@ -2,8 +2,6 @@ from .base import Command
 import sqlite3
 
 tagdb = "/home/amb/public_html/vote/quote.db"
-connection = sqlite3.connect( tagdb )
-c = connection.cursor()
 
 def conopen():
     connection = sqlite3.connect( tagdb )
@@ -92,18 +90,18 @@ def chunks(l,n):
 class Tag(Command):
     def on_command(self, bot, event, args):
         results = "huh?"
-        if "find" in args:
-          args=args.split(' ',1)[1]
-          results = ircFindTaggedQuotes( args )
-        if "list" in args:
+        tokens = args.split(' ')
+        firstarg=tokens[0]
+        restargs=' '.join(tokens[1:])
+        if firstarg == "find":
+          results = ircFindTaggedQuotes( restargs )
+        if firstarg == "list":
           results = ircTopTags()
-        if "for" in args:
-          args=args.split(' ',1)[1]
-          results = ircFindTagsByQuote( args )
-        if "count" in args:
-          args=args.split(' ',1)[1]
-          results = ircFindTagCount( args )
-        if "add" in args:
+        if firstarg == "for":
+          results = ircFindTagsByQuote( restargs )
+        if firstarg == "count":
+          results = ircFindTagCount( restargs )
+        if firstarg == "add":
           results = "nope"
         bot.respond(event, results)
         return True
