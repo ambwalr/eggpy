@@ -1,9 +1,22 @@
 import collections
 import random
 import re
-#disable caps handling for now
-#import capsreplace
-#from collections import defaultdict
+
+def iscapital(string):
+  return string==string.capitalize()
+def istitle(string):
+  return string==string.title()
+
+def matchcaps(example,string):
+  if example.islower(): #yo mama
+    return string.lower()
+  if example.isupper(): #YO MAMA
+    return string.upper()
+  if iscapital(example): #Yo mama
+    return string.capitalize()
+  if istitle(example): #Yo Mama
+    return string.title()
+  return string
 
 def beginswith(string,substr):
     return string.find(substr,0,len(substr))!=-1
@@ -35,8 +48,8 @@ def randword(dictionary,word):
     if lookup in ff:
         choice= random.choice( ff[lookup] )
         result=re.sub(",.+","",choice)
-        return result+suffix
-        #return capsreplace.matchcaps( word, result+suffix )
+        #return result+suffix
+        return matchcaps( word, result+suffix )
     else:
         return "-REDACTED-"
 
